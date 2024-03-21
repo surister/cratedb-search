@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "vue-search-cratedb"
+version = "0.1.0"
+description = ""
+authors = ["surister <surister98@gmail.com>"]
+readme = "README.md"
+packages = [{include = "vue_search_cratedb"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+polars = "^0.20.5"
+crate = {version = "^0.35.2", extras = ["sqlalchemy"]}
+pandas = "^2.2.0"
+pyarrow = "^15.0.0"
+adbc-driver-postgresql = "^0.9.0"
+docutils = "^0.20.1"
+pygments = "^2.17.2"
+docutils-stubs = "^0.0.22"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
