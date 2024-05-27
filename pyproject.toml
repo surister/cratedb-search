@@ -18,6 +18,9 @@ pygments = "^2.17.2"
 docutils-stubs = "^0.0.22"
 openai = "^1.23.6"
 python-ulid = "^2.5.0"
+beautifulsoup4 = "^4.12.3"
+requests = "^2.32.1"
+tiktoken = "^0.7.0"
 
 
 [build-system]

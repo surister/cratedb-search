@@ -10,7 +10,7 @@ def insert_vectors_to_cratedb(connection,
 
 
 def get_indexes(connection, table_name: str):
-    query = f"SELECT uuid, content FROM {table_name}"
+    query = f"SELECT _id, content FROM {table_name}"
     cursor = connection.cursor()
     cursor.execute(query)
     return cursor.fetchall()
@@ -18,7 +18,7 @@ def get_indexes(connection, table_name: str):
 
 def knn_search(connection, table_name, vec_column_name, vec, n_results=10):
     query = f"""
-        SELECT source_id, _score FROM {table_name} WHERE knn_match({vec_column_name}, {vec}, {n_results}) ORDER BY _score DESC;
+        SELECT fs_search_id, _score FROM {table_name} WHERE knn_match({vec_column_name}, {vec}, {n_results}) ORDER BY _score DESC;
     """
     # 189k tokens
     # $0.02 / 1M tokens
