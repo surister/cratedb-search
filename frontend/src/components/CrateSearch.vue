@@ -91,21 +91,21 @@ async function request_hybrid_search(fs_table, fs_columns, fs_search_term, fs_fu
                              WHERE MATCH ((%fs_columns), '%fs_search_term') USING best_fields
                              with (fuzziness = %fs_fuzziness)
                              ORDER BY fs_score DESC
-                             LIMIT 15),
+                             LIMIT 10),
                       vec as (SELECT _score,
                                      fs_search_id,
                                      RANK() over (ORDER BY _score DESC) as vec_rank
                               FROM %vector_table
                               WHERE KNN_MATCH("%vector_column", [%vector], %vector_limit)
                               ORDER BY _score DESC
-                              LIMIT 15),
+                              LIMIT 10),
                       hybrid as (SELECT fs.fs_id                AS id_from_fs,
                                         vec.fs_search_id        AS id_from_vec,
                                         vec.vec_rank,
                                         fs.fs_rank
                                  FROM fs FULL JOIN vec
                                  ON fs.fs_id = vec.fs_search_id)
-                 SELECT fs.title, hybrid.vec_rank, hybrid.fs_rank, fs.content_html, fs.section_hierarchy
+                 SELECT fs.title, hybrid.vec_rank, hybrid.fs_rank, fs.content_html, fs.section_hierarchy, fs.metadata['url']
                  FROM hybrid,
                       fs_search5 fs
                  WHERE fs._id = hybrid.id_from_fs
@@ -153,6 +153,15 @@ async function hybrid_search() {
     let fs_rank = resultElement[2] || 0;
     let final_rank = 0;
 
+    // If fulltext search rank exists, we boost it
+    // a little bit, to make mit more prevalent than
+    // vector search, this is the equivalent of
+    // having weight = 0.1 in the RRF calculation
+    // below.
+    if (fs_rank !== 0) {
+      fs_rank -= .1
+    }
+
     for (const fsRankElement of [vec_rank, fs_rank]) {
       if (fsRankElement !== 0) {
         final_rank += 1 / (fsRankElement + 0)
@@ -173,7 +182,7 @@ async function hybrid_search() {
   }
 }
 
-function debounce(func, timeout = 500) {
+function debounce(func, timeout = 100) {
   let timer;
   return (...args) => {
     clearTimeout(timer);
@@ -204,16 +213,16 @@ watch(() => hybrid_search_options.value.text, () => {
 
 const highlight = function (text, search_term) {
   const regex = new RegExp(search_term, "gi")
-  console.log(regex)
   return text.replaceAll(regex, `<span style="color: red">${search_term}</span>`)
 }
 
 const compact_results = ref(true)
+const compact_results_0 = ref(true)
 </script>
 
 <template>
 
-  <v-container><h1><v-icon>mdi-alert</v-icon> INTERNAL PREVIEW FOR CRATE.IO ONLY</h1></v-container>
+  <v-container><h1><v-icon>mdi-alert</v-icon>INTERNAL PREVIEW FOR CRATE.IO ONLY</h1></v-container>
 <v-container>
   <v-row class="mt-5">
     <v-col>
@@ -259,37 +268,52 @@ const compact_results = ref(true)
     <v-col>
       <v-label>Hybrid Search with RFF with K = 0</v-label>
       <v-card variant="outlined">
+
         <v-card-title>
           <v-row>
             <v-col>Search CrateDB docs</v-col>
-            <v-spacer></v-spacer>
+            <v-spacer/>
             <v-col class="text-right">
               <v-btn size="small"
                      class="ml-2"
                      text="Compact results"
                      variant="tonal"
-                     :prepend-icon="compact_results ? 'mdi-check-circle-outline': 'mdi-circle-outline'"
-                     @click="compact_results = !compact_results"/>
+                     :prepend-icon="compact_results_0 ? 'mdi-check-circle-outline': 'mdi-circle-outline'"
+                     @click="compact_results_0 = !compact_results_0"/>
             </v-col>
           </v-row>
         </v-card-title>
+
         <v-card-text>
-          <v-text-field variant="outlined" v-model="hybrid_search_options.text" clearable @click:clear="hybrid_search_options.results = []"></v-text-field>
-          <v-card variant="outlined" density="compact" class="mt-2" v-for="card in hybrid_search_options.results.rows"
+          <v-text-field variant="outlined"
+                        v-model="hybrid_search_options.text"
+                        clearable
+                        @click:clear="hybrid_search_options.results = []"/>
+
+          <v-card variant="outlined" density="compact" class="mt-2"
+                  v-for="card in hybrid_search_options.results.rows"
                   :key="card" v-if="hybrid_search_options.results.rows">
-            <v-card-item :title="card[0] + ' '">
+
+            <v-card-item>
+              <template v-slot:title>
+                {{ card[0] + ' ' }} <a :href="card[5]" target="_blank">
+                <v-icon icon="mdi-link-variant"/>
+              </a>
+              </template>
               <template v-slot:subtitle>
                 <v-breadcrumbs density="compact" :items="card[4]" style="padding-left: 0"/>
               </template>
             </v-card-item>
-            <v-card-subtitle>
-            </v-card-subtitle>
+
+
             <v-expand-transition>
-              <v-card-text class="stuff" v-if="compact_results">
-                  <div v-html="highlight(card[3], hybrid_search_options.text)"></div>
+              <v-card-text class="stuff" v-if="compact_results_0">
+                <div v-html="highlight(card[3], hybrid_search_options.text)"></div>
               </v-card-text>
             </v-expand-transition>
+
           </v-card>
+
         </v-card-text>
       </v-card>
     </v-col>
