@@ -12,7 +12,7 @@ const knn_search_options = ref({
   schema: 'doc',
   table: 'fs_vec_big2',
   vector_column_name: 'xs',
-  openai_token: '',
+  openai_token: import.meta.env.VITE_OPENAI_TOKEN,
   model_dimensions: 2048,
   model: 'text-embedding-3-large',
   text: 'scalar knn search',
@@ -266,7 +266,7 @@ const compact_results_0 = ref(true)
   </v-row>
   <v-row class="mt-5">
     <v-col>
-      <v-label>Hybrid Search with RFF with K = 0</v-label>
+      <v-label>Hybrid Search with RFF with K_full_text_search = .1</v-label>
       <v-card variant="outlined">
 
         <v-card-title>
