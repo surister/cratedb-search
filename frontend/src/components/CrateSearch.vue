@@ -10,7 +10,7 @@ const crate_uri = 'http://192.168.88.251:4200'
 const knn_search_options = ref({
   results: 10, // How many results will the knn return
   schema: 'doc',
-  table: 'fs_vec_big2',
+  table: 'fs_search',
   vector_column_name: 'xs',
   openai_token: import.meta.env.VITE_OPENAI_TOKEN,
   model_dimensions: 2048,
@@ -24,7 +24,7 @@ const knn_search_options = ref({
 
 const fs_search_options = ref({
   schema: 'doc',
-  table: ['fs_search5'],
+  table: ['fs_search'],
   multiple: false,
   column: 'content, title',
   text: 'scalar knn search',
@@ -84,7 +84,8 @@ async function request_crate(_stmt, query_params = '', sql_stmt_params = {}, is_
 
 async function request_hybrid_search(fs_table, fs_columns, fs_search_term, fs_fuzziness, vector_table, vector_column, vector, vector_limit) {
 
-  const query = `WITH fs as (SELECT _score                             AS fs_score,
+  // language=SQL format=false
+let query = `WITH fs as (SELECT _score                             AS fs_score,
                                     _id                                as fs_id,
                                     RANK() over (ORDER BY _score DESC) as fs_rank
                              FROM %fs_table
@@ -110,7 +111,23 @@ async function request_hybrid_search(fs_table, fs_columns, fs_search_term, fs_fu
                       fs_search5 fs
                  WHERE fs._id = hybrid.id_from_fs
                     OR fs._id = hybrid.id_from_vec`
-
+  query = `
+    with vector as (SELECT _score,
+                           RANK() OVER (
+                             ORDER BY
+                               _score DESC
+                             ) as rank,
+                           *
+                    FROM fs_search
+                    WHERE KNN_MATCH("%vector_column", [%vector], %vector_limit))
+    SELECT title,
+           rank as  vec_rank,
+           rank as  fs_rank,
+           content_html,
+           ignore_this_section_hierarchy,
+           metadata ['file_name']
+    FROM vector
+  `
   const _response = await request_crate(query, null,
     {
       '%fs_table': fs_table,
@@ -148,38 +165,6 @@ async function hybrid_search() {
       headers: result.cols,
       rows: result.rows
     }
-  for (const resultElement of result.rows) {
-    let vec_rank = resultElement[1] || 0;
-    let fs_rank = resultElement[2] || 0;
-    let final_rank = 0;
-
-    // If fulltext search rank exists, we boost it
-    // a little bit, to make mit more prevalent than
-    // vector search, this is the equivalent of
-    // having weight = 0.1 in the RRF calculation
-    // below.
-    if (fs_rank !== 0) {
-      fs_rank -= .1
-    }
-
-    for (const fsRankElement of [vec_rank, fs_rank]) {
-      if (fsRankElement !== 0) {
-        final_rank += 1 / (fsRankElement + 0)
-      }
-    }
-
-    resultElement.push(
-      final_rank
-    )
-  }
-  let sorted = result.rows.sort((a, b) => {
-    return b[a.length - 1] - a[a.length - 1]
-  })
-  result.cols.push('final_weight')
-  hybrid_search_options.value.results = {
-    headers: result.cols,
-    rows: sorted
-  }
 }
 
 function debounce(func, timeout = 100) {
@@ -296,12 +281,12 @@ const compact_results_0 = ref(true)
 
             <v-card-item>
               <template v-slot:title>
-                {{ card[0] + ' ' }} <a :href="card[5]" target="_blank">
+                {{ card[0] + ' ' }} <a target="_blank">
                 <v-icon icon="mdi-link-variant"/>
               </a>
               </template>
               <template v-slot:subtitle>
-                <v-breadcrumbs density="compact" :items="card[4]" style="padding-left: 0"/>
+                <v-breadcrumbs density="compact" :items="['', card[4]]" style="padding-left: 0"/>
               </template>
             </v-card-item>
 
