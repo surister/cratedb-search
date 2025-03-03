@@ -6,7 +6,7 @@ import OpenAI from "openai";
 
 const search2 = ref('')
 const data = ref()
-const crate_uri = 'http://192.168.88.251:4200'
+const crate_uri = 'http://localhost:4200'
 const knn_search_options = ref({
   results: 10, // How many results will the knn return
   schema: 'doc',
@@ -207,7 +207,7 @@ const compact_results_0 = ref(true)
 
 <template>
 
-  <v-container><h1><v-icon>mdi-alert</v-icon>INTERNAL PREVIEW FOR CRATE.IO ONLY</h1></v-container>
+  <v-container><h1><v-icon>mdi-alert</v-icon>INTERNAL PREVIEW FOR CRATEDB - HELLO OPENSOUTHCODE</h1></v-container>
 <v-container>
   <v-row class="mt-5">
     <v-col>
@@ -251,7 +251,7 @@ const compact_results_0 = ref(true)
   </v-row>
   <v-row class="mt-5">
     <v-col>
-      <v-label>Hybrid Search with RFF with K_full_text_search = .1</v-label>
+      <v-label>Hybrid Search with RRF with K_full_text_search = .1</v-label>
       <v-card variant="outlined">
 
         <v-card-title>
