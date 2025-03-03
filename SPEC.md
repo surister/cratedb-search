@@ -4,7 +4,7 @@ Version = {PENDING}
 
 This specification outlines a defined way of storing data in CrateDB for hybrid-search (vector + bm25).
 
-If you follow the specification, you will automatically get full-text search, vector-search and
+By following the specification, the user gets pre-made full-text search, vector-search and
 hybrid-search queries to work out of the box, as well as to be able to reuse components,
 libraries and tooling based on the specification.
 
@@ -37,13 +37,13 @@ The DDL statement for the table is:
 ```sql
 CREATE TABLE IF NOT EXISTS "doc"."search"
 (
-    "hierarchy"    TEXT NULL,
-    "title_fs"     TEXT,
-    "content_fs"   TEXT,
-    "content_html" TEXT NULL,
-    "ref_html"     TEXT,
-    "metadata"     OBJECT,
-    "xs"           FLOAT_VECTOR(2048)
+    "hierarchy"      TEXT,
+    "title_fs"       TEXT NOT NULL,
+    "content_fs"     TEXT NOT NULL,
+    "content_pretty" TEXT,
+    "ref"            TEXT,
+    "xs" FLOAT_VECTOR(2048) NOT NULL,
+    "metadata"       OBJECT
 )
 ```
 
@@ -60,8 +60,7 @@ Examples:
 * A district 'Leopoldstadt', hierarchy=`Europe-Austria-Vienna`
 
 It is composed of elements joined by a character, it is recommended to use either `/` or `-`, but it
-is
-left to the implementor, as the end client can take care of any character by splitting the string.
+is left to the implementor, as the end client can take care of any character by splitting the string.
 
 ## title_fs
 
@@ -70,7 +69,7 @@ the implementor use case.
 
 The full-text search part of the hybrid search might be done in two different fields (title_fs and
 content_fs)
-to give more weight to title matches, if it makes sense for the implementor use case.
+to give more weight to title matches if it makes sense for the implementor use case.
 
 Examples:
 
@@ -92,16 +91,23 @@ it must be null.
 Examples:
 * Code that is formatted, where in `content_fs` is not formatted properly.
 * HTML, where in `content_fs` is pure text, without html tags.
+* A link to the image of a movie search.
 
 ## ref
 
-The reference to point the content
+The reference to point the content within the search page, typically an html ref id.
 
 ## xs
 
-The vector representation of the content.
+The vector representation of the `content`, using a text embedding.
 
+## metadata
 
+An object containing all needed metadata attributes or attributes that exist in the dataset that
+do not fit the columns.
+
+Example:
+In a movie dataset: Genres, Director, Actors, publishing date...
 
 ## More columns are needed
 
@@ -110,6 +116,68 @@ new column with a full-text index is needed, consider opening an issue to improv
 perhaps the use case was not taken into account. If the use case is too unique to be generalized,
 it is ok to extend the specification.
 
+# Querying
+
+The specification supports three different queries: Keyword search, Semantic Search, and Hybrid Search.
+
+## Hybrid Search
+See https://cratedb.com/blog/hybrid-search-explained for more indepth explanation on Hybrid Search queries.
+
+The query for doing hybrid search over this specification uses RRF as `Re-ranking` method.
+
+where:
+ * XS
+ * SEARCH_TERM: the search input by the user
+
+```sql
+WITH bm25 as (
+  SELECT
+    _score,
+    RANK() OVER (
+      ORDER BY
+        _score DESC
+    ) as rank,
+    title
+  FROM
+    fs_search
+  WHERE
+    MATCH("content", 'knn search')
+  ORDER BY
+    _score DESC
+),
+vector as (
+  SELECT
+    _score,
+    RANK() OVER (
+      ORDER BY
+        _score DESC
+    ) as rank,
+    title
+  FROM
+    fs_search
+  WHERE
+    KNN_MATCH(
+      xs,
+      [vector...],
+      15
+    )
+)
+SELECT
+  TRUNC((1.0 / (bm25.rank + 60)) + (1.0 / (vector.rank + 60)), 6) as final_rank,
+  bm25.rank as bm25_rank,
+  vector.rank as vector_rank,
+  bm25.title
+FROM
+  bm25,
+  vector
+WHERE
+  bm25.title = vector.title
+ORDER BY final_rank DESC
+```
+
+## Semantic Search
+
+## Keyword Search
 
 
 NOTES:
