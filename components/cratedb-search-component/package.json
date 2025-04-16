@@ -1,0 +1,33 @@
+{
+  "name": "cratedb-search-component",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/cratedb-search-component.umd.cjs",
+  "module": "./dist/cratedb-search-component.js",
+  "exclude": [
+    "src/App.vue",
+    "src/main.js"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/cratedb-search-component.js",
+      "require": "./dist/cratedb-search-component.umd.cjs"
+    },
+    "./dist/style.css": "./dist/style.css"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.1.0"
+  }
+}
