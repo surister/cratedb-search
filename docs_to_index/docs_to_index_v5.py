@@ -134,11 +134,11 @@ from embeddings.io import insert_to_cratedb, run_stmt
 crate_stmt = """
 CREATE TABLE IF NOT EXISTS "doc"."fs_search" (
    "level" BIGINT,
-   "ref" TEXT,
-   "ignore_this_section_hierarchy" TEXT,
-   "title" TEXT,
-   "content" TEXT,
+   "hierarchy" TEXT,
+   "title_fs" TEXT,
+   "content_fs" TEXT,
    "content_html" TEXT,
+   "ref_html" TEXT,
    "metadata" OBJECT,
    "xs" FLOAT_VECTOR(2048)
 )
