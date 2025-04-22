@@ -58,7 +58,7 @@ The position of the content within the context of all the data. It will depend o
 Examples:
 
 * A file 'myfile.parquet', hierarchy=`/data/production/products/sample/myfile.parquet`
-* A html section 'PHONE 16GB RAM - 400€', hierarchy=`/offers/phones/newphones/phone-400`
+* A html section 'PHONE 16GB RAM - 400€', hierarchy=`/shop/offers/phones/phone-400`
 * A district 'Leopoldstadt', hierarchy=`Europe-Austria-Vienna`
 
 It is composed of elements joined by a character, it is recommended to use either `/` or `-`, but it
