@@ -91,7 +91,8 @@ const info_item = ref(null)
                })}">Search
         </v-btn>
       </template>
-      <template #content="{results}">
+
+      <template #content="{results}" >
         <v-row dense>
           <v-col v-for="result in results" cols="2">
             <template v-if="results">
@@ -124,7 +125,12 @@ const info_item = ref(null)
       </template>
     </SearchBase>
 
-
+    <v-row align="center">
+      <v-col align-self="center" class="text-center">
+        <img v-if="results.length === 0" src="@/assets/empty.png" alt="CrateDB Logo" width="512"
+             loading="lazy">
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
