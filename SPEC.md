@@ -23,6 +23,7 @@ Data has to be conformed in a table that looks like this:
 
 | column_name    | type               | nullable | note                       |
 |----------------|--------------------|----------|----------------------------|
+| id             |                    |          |                            | 
 | hierarchy      | TEXT               | True     | optional                   |
 | title_fs       | TEXT               | False    | has full-text index        |
 | content_fs     | TEXT               | False    | has full-text index        |
@@ -36,15 +37,16 @@ The DDL statement for the table is:
 
 ```sql
 CREATE TABLE IF NOT EXISTS "doc"."search"
-(
-    "hierarchy"      TEXT,
-    "title_fs"       TEXT NOT NULL,
-    "content_fs"     TEXT NOT NULL,
-    "content_pretty" TEXT,
-    "ref"            TEXT,
-    "xs" FLOAT_VECTOR(2048) NOT NULL,
-    "metadata"       OBJECT
-)
+    (
+        "id"             INTEGER
+        "hierarchy"      TEXT,
+        "title_fs"       TEXT INDEX using fulltext NOT NULL,
+        "content_fs"     TEXT INDEX using fulltext NOT NULL,
+        "content_pretty" TEXT,
+        "ref"            TEXT,
+        "xs" FLOAT_VECTOR(2048) NOT NULL,
+        "metadata"       OBJECT
+    )
 ```
 
 # Fields
