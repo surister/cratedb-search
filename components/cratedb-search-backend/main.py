@@ -9,12 +9,21 @@ from crate import client
 app = FastAPI()
 
 origins = ['http://localhost:3000']
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins
 )
 
 token = os.getenv('OPEN_AI_TOKEN')
+
+
+def run_stmt(stmt: str, connection: str = '192.168.88.251:4200') -> list:
+    cursor = client.connect(connection).cursor()
+    cursor.execute(stmt)
+    return cursor.fetchall()
+
+
 def get_embedding(content: str,
                   token: None | str,
                   model="text-embedding-3-large") -> list[float]:
@@ -27,15 +36,18 @@ def get_embedding(content: str,
     return response.data[0].embedding
 
 
-def run_stmt(stmt: str, connection: str = '192.168.88.251:4200') -> list:
-    cursor = client.connect(connection).cursor()
-    cursor.execute(stmt)
-    return cursor.fetchall()
+def get_embedding_or_create(search_terms: str) -> (bool, list[float]):
+    """Checks if the vector exists in the """
+    result = run_stmt(f"select xs from vector_cache where search_terms = '{search_terms}'")
 
+    if result:
+        return True, result[0][0]
 
-def hybrid_search_query(search_term: str) -> list:
+    vector = get_embedding(search_terms, token=os.getenv('OPENAI_TOKEN'))
+    run_stmt(f"insert into vector_cache values ('{search_terms}', {vector})")
+    return False, vector
 
-    vector = get_embedding(search_term)
+def hybrid_search_query(search_term: str, vector: list[float]) -> list:
     query = f"""
     WITH 
         bm25 as (
@@ -97,5 +109,6 @@ def hybrid_search_query(search_term: str) -> list:
 @app.get("/search/hybrid")
 def hybrid_search(search_term: str):
     t = time.time()
-    result = hybrid_search_query(search_term)
+    created, vector = get_embedding_or_create(search_term)
+    result = hybrid_search_query(search_term, vector)
     return {'result': result, 'query_time': time.time() - t}
